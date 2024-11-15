@@ -19,45 +19,48 @@ type LeagueData = {
   badges: string[]
   total_points: number
   rank: number
+  days_active: number
 }
 
-const mockChartData = [
-  { time: 'Mon', userPoints: 85, topUserPoints: 95 },
-  // ... keep your mock chart data for now
-]
+type ChartData = {
+  time: string
+  user_points: number
+  top_user_points: number
+}
 
 export default function League() {
   const [category, setCategory] = React.useState<'weekly' | 'allTime' | 'team'>('weekly')
   const [leagueData, setLeagueData] = React.useState<LeagueData[]>([])
-  const [chartData] = React.useState(mockChartData)
+  const [chartData, setChartData] = React.useState<ChartData[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
 
   const searchParams = useSearchParams()
   const memberId = searchParams.get('memberId')
 
-  React.useEffect(() => {
-    if (memberId) {
-      fetchLeagueData()
-    }
-  }, [memberId, category])
+  const fetchData = React.useCallback(async () => {
+    if (!memberId) return
 
-  const fetchLeagueData = async () => {
     try {
       setIsLoading(true)
       const response = await fetch(`/api/league-rankings?memberId=${memberId}&period=${category}`)
       const data = await response.json()
       
       if (response.ok) {
-        setLeagueData(data.rows || [])
+        setLeagueData(data.rankings || [])
+        setChartData(data.chartData || [])
       } else {
         console.error('Error fetching league data:', data.error)
       }
     } catch (error) {
-      console.error('Error fetching league data:', error)
+      console.error('Error fetching data:', error)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [memberId, category])
+
+  React.useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const getBorderColor = (rank: number, isCurrentUser: boolean) => {
     if (isCurrentUser) return 'border-[#50c2aa]'
@@ -105,16 +108,34 @@ export default function League() {
               ))}
             </div>
           </div>
+          <div className="text-xs text-gray-500">
+            {user.days_active} days active
+          </div>
         </div>
         <div className="text-sm font-medium text-gray-900 flex-shrink-0">
-          {user.total_points} pts
+          {user.total_points.toLocaleString()} pts
         </div>
       </div>
     )
   }
 
   if (isLoading) {
-    return <div className="animate-pulse">Loading...</div>
+    return (
+      <Card className="bg-white shadow-lg h-full">
+        <CardContent className="p-3">
+          <div className="animate-pulse space-y-4">
+            <div className="h-6 bg-gray-200 rounded w-1/2 mx-auto"/>
+            <div className="h-10 bg-gray-200 rounded"/>
+            <div className="h-[220px] bg-gray-200 rounded"/>
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-16 bg-gray-200 rounded"/>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -131,10 +152,71 @@ export default function League() {
           </Tabs>
         </div>
 
-        {/* Keep your chart section */}
         <div className="h-[220px] w-full bg-gray-100 rounded-[20px] p-2 mb-4">
           <ResponsiveContainer width="100%" height="100%">
-            {/* ... your existing chart code ... */}
+            <AreaChart
+              data={chartData}
+              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="colorPoints" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#51c1a9" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#51c1a9" stopOpacity={0.1}/>
+                </linearGradient>
+                <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#fbb350" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#fbb350" stopOpacity={0.1}/>
+                </linearGradient>
+              </defs>
+              <XAxis
+                dataKey="time"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#333', fontSize: 12 }}
+                dy={2}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#333', fontSize: 12 }}
+                dx={-5}
+              />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="rounded-[8px] border border-gray-200 bg-white p-2 shadow-lg">
+                        <p className="text-sm font-medium" style={{ color: '#fbb350' }}>
+                          Top Score: {payload[1].value.toLocaleString()} points
+                        </p>
+                        <p className="text-sm font-medium" style={{ color: '#51c1a9' }}>
+                          Your Score: {payload[0].value.toLocaleString()} points
+                        </p>
+                      </div>
+                    )
+                  }
+                  return null
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="user_points"
+                stroke="#51c1a9"
+                strokeWidth={2}
+                fillOpacity={1}
+                fill="url(#colorPoints)"
+                dot={false}
+              />
+              <Area
+                type="monotone"
+                dataKey="top_user_points"
+                stroke="#fbb350"
+                strokeWidth={2}
+                fillOpacity={0.3}
+                fill="url(#goldGradient)"
+                dot={false}
+              />
+            </AreaChart>
           </ResponsiveContainer>
         </div>
 
