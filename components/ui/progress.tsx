@@ -3,15 +3,15 @@ import * as React from "react"
 import * as ProgressPrimitive from "@radix-ui/react-progress"
 import { cn } from "@/lib/utils"
 
-declare module 'react' {
-  interface CSSProperties {
+type ProgressProps = React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> & {
+  style?: React.CSSProperties & {
     '--progress-foreground'?: string;
-  }
+  };
 }
 
 const Progress = React.forwardRef
   React.ComponentRef<typeof ProgressPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>
+  ProgressProps
 >(({ className, value, ...props }, ref) => (
   <ProgressPrimitive.Root
     ref={ref}
