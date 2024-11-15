@@ -1,23 +1,32 @@
 'use client'
-import React from 'react';
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Clock, Calendar, CalendarDays, CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react';
+import React from 'react'
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Clock, Calendar, CalendarDays, CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 
 interface CircularProgressProps {
-  value: number;
-  max: number;
-  color: string;
-  label: string;
-  icon: React.ReactNode;
+  value: number
+  max: number
+  color: string
+  label: string
+  icon: React.ReactNode
+}
+
+interface Session {
+  count: number
+  max: number
+  label: string
+  color: string
+  icon?: React.ReactNode
 }
 
 const CircularProgress: React.FC<CircularProgressProps> = ({ value, max, color, label, icon }) => {
-  const radius = 55;
-  const strokeWidth = 3;
-  const normalizedRadius = radius - strokeWidth / 2;
-  const circumference = normalizedRadius * 2 * Math.PI;
-  const strokeDashoffset = circumference - (value / max) * circumference;
+  const radius = 55
+  const strokeWidth = 3
+  const normalizedRadius = radius - strokeWidth / 2
+  const circumference = normalizedRadius * 2 * Math.PI
+  const strokeDashoffset = circumference - (value / max) * circumference
 
   return (
     <div className="relative flex flex-col items-center justify-center">
@@ -82,50 +91,70 @@ const CircularProgress: React.FC<CircularProgressProps> = ({ value, max, color, 
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 export default function ActivityCircles() {
-  const [currentIndex, setCurrentIndex] = React.useState(0);
+  const [currentIndex, setCurrentIndex] = React.useState(0)
+  const [sessions, setSessions] = React.useState<Session[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  
+  const searchParams = useSearchParams()
+  const memberId = searchParams.get('memberId')
 
-  const sessions = [
-    { 
-      count: 5, 
-      max: 10, 
-      label: "today", 
-      color: "#546bc8",
-      icon: <Clock className="w-5 h-5" />
-    },
-    { 
-      count: 18, 
-      max: 50, 
-      label: "this week", 
-      color: "#50c2aa",
-      icon: <Calendar className="w-5 h-5" />
-    },
-    { 
-      count: 12, 
-      max: 100, 
-      label: "this month", 
-      color: "#fb9851",
-      icon: <CalendarDays className="w-5 h-5" />
-    },
-    { 
-      count: 42, 
-      max: 1000, 
-      label: "this year", 
-      color: "#fbb351",
-      icon: <CalendarRange className="w-5 h-5" />
+  React.useEffect(() => {
+    if (memberId) {
+      fetchActivityData()
     }
-  ];
+  }, [memberId])
+
+  const fetchActivityData = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/activity-circles?memberId=${memberId}`)
+      const data = await response.json()
+      
+      if (data.sessions) {
+        // Add icons to the sessions data
+        const sessionsWithIcons = data.sessions.map((session: Session) => ({
+          ...session,
+          icon: getIconForLabel(session.label)
+        }))
+        setSessions(sessionsWithIcons)
+      }
+    } catch (error) {
+      console.error('Error fetching activity data:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const getIconForLabel = (label: string) => {
+    switch (label) {
+      case 'today':
+        return <Clock className="w-5 h-5" />
+      case 'this week':
+        return <Calendar className="w-5 h-5" />
+      case 'this month':
+        return <CalendarDays className="w-5 h-5" />
+      case 'this year':
+        return <CalendarRange className="w-5 h-5" />
+      default:
+        return <Clock className="w-5 h-5" />
+    }
+  }
 
   const nextMetric = () => {
-    setCurrentIndex((prev) => (prev + 1) % sessions.length);
-  };
+    setCurrentIndex((prev) => (prev + 1) % sessions.length)
+  }
 
   const prevMetric = () => {
-    setCurrentIndex((prev) => (prev - 1 + sessions.length) % sessions.length);
-  };
+    setCurrentIndex((prev) => (prev - 1 + sessions.length) % sessions.length)
+  }
+
+  if (isLoading) {
+    return <div className="animate-pulse">Loading...</div>
+  }
 
   return (
     <Card className="bg-white shadow-lg h-[280px]">
@@ -144,13 +173,15 @@ export default function ActivityCircles() {
               <ChevronLeft className="h-5 w-5" />
             </Button>
 
-            <CircularProgress
-              value={sessions[currentIndex].count}
-              max={sessions[currentIndex].max}
-              color={sessions[currentIndex].color}
-              label={sessions[currentIndex].label}
-              icon={sessions[currentIndex].icon}
-            />
+            {sessions[currentIndex] && (
+              <CircularProgress
+                value={sessions[currentIndex].count}
+                max={sessions[currentIndex].max}
+                color={sessions[currentIndex].color}
+                label={sessions[currentIndex].label}
+                icon={sessions[currentIndex].icon}
+              />
+            )}
 
             <Button
               variant="ghost"
@@ -179,5 +210,5 @@ export default function ActivityCircles() {
         </div>
       </div>
     </Card>
-  );
+  )
 }
