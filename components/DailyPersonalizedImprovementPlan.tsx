@@ -10,37 +10,40 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useSearchParams } from 'next/navigation'
 
-const improvementTasks = [
-  "Complete these 3 price negotiation scenarios by Friday",
-  "Practice with AI bot on product X for 20 minutes daily",
-  "Role-play these specific customer personas with detailed feedback"
-]
-
-const taskColors = ["#fbb351", "#50c2aa", "#546bc8"]
-
-interface ImprovementTaskProps {
-  task: string;
-  color: string;
+interface Task {
+  task: string
+  color: string
 }
 
-function ImprovementTask({ task, color }: ImprovementTaskProps) {
+interface ImprovementTaskProps {
+  task: Task
+  onComplete: (completed: boolean) => void
+}
+
+function ImprovementTask({ task, onComplete }: ImprovementTaskProps) {
   const [isChecked, setIsChecked] = React.useState(false)
+
+  const handleCheck = (checked: boolean) => {
+    setIsChecked(checked)
+    onComplete(checked)
+  }
 
   return (
     <div 
       className="flex items-start gap-3 p-4 rounded-[20px] transition-all duration-300"
-      style={{ backgroundColor: color }}
+      style={{ backgroundColor: task.color }}
     >
       <div className="relative flex items-center justify-center pt-1">
         <Checkbox 
           checked={isChecked}
-          onCheckedChange={(checked) => setIsChecked(checked as boolean)}
+          onCheckedChange={handleCheck}
           className="h-5 w-5 rounded-lg border-2 border-white/80 data-[state=checked]:bg-transparent data-[state=checked]:border-white"
         />
       </div>
       <div className="flex-1 text-sm font-medium text-white leading-tight">
-        {task}
+        {task.task}
       </div>
     </div>
   )
@@ -49,12 +52,59 @@ function ImprovementTask({ task, color }: ImprovementTaskProps) {
 const MemoizedImprovementTask = React.memo(ImprovementTask)
 
 export default function DailyPersonalizedImprovementPlan() {
+  const [tasks, setTasks] = React.useState<Task[]>([])
   const [isRefreshing, setIsRefreshing] = React.useState(false)
+  const [isLoading, setIsLoading] = React.useState(true)
+  
+  const searchParams = useSearchParams()
+  const memberId = searchParams.get('memberId')
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setIsRefreshing(false)
+  const fetchTasks = React.useCallback(async () => {
+    if (!memberId) return
+    
+    try {
+      setIsRefreshing(true)
+      const response = await fetch(`/api/improvement-plan?memberId=${memberId}`)
+      const data = await response.json()
+      
+      if (data.tasks) {
+        setTasks(data.tasks)
+      }
+    } catch (error) {
+      console.error('Error fetching improvement plan:', error)
+    } finally {
+      setIsRefreshing(false)
+      setIsLoading(false)
+    }
+  }, [memberId])
+
+  React.useEffect(() => {
+    fetchTasks()
+  }, [fetchTasks])
+
+  const handleTaskComplete = async (index: number, completed: boolean) => {
+    if (!memberId) return
+
+    try {
+      // Record task completion in the database
+      await fetch('/api/improvement-plan/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          memberId,
+          taskIndex: index,
+          completed
+        })
+      })
+    } catch (error) {
+      console.error('Error recording task completion:', error)
+    }
+  }
+
+  if (isLoading) {
+    return <div className="animate-pulse">Loading...</div>
   }
 
   return (
@@ -71,7 +121,7 @@ export default function DailyPersonalizedImprovementPlan() {
                   variant="ghost" 
                   size="icon" 
                   className="w-8 h-8 ml-2"
-                  onClick={handleRefresh}
+                  onClick={() => fetchTasks()}
                   disabled={isRefreshing}
                 >
                   <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -85,11 +135,11 @@ export default function DailyPersonalizedImprovementPlan() {
           </TooltipProvider>
         </div>
         <div className="space-y-3">
-          {improvementTasks.map((task, index) => (
+          {tasks.map((task, index) => (
             <MemoizedImprovementTask 
               key={index} 
-              task={task} 
-              color={taskColors[index % taskColors.length]}
+              task={task}
+              onComplete={(completed) => handleTaskComplete(index, completed)}
             />
           ))}
         </div>
