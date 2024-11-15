@@ -4,13 +4,13 @@ import * as ProgressPrimitive from "@radix-ui/react-progress"
 import { cn } from "@/lib/utils"
 
 type ProgressProps = React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> & {
-  style?: React.CSSProperties & {
+  style?: {
     '--progress-foreground'?: string;
-  };
+  } & React.CSSProperties;
 }
 
 const Progress = React.forwardRef
-  React.ComponentRef<typeof ProgressPrimitive.Root>,
+  HTMLDivElement,  // Changed from ComponentRef to HTMLDivElement
   ProgressProps
 >(({ className, value, ...props }, ref) => (
   <ProgressPrimitive.Root
