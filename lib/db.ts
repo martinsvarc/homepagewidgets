@@ -1,8 +1,11 @@
-import { createPool, Pool, QueryResult, PoolClient } from '@vercel/postgres';
+import { createPool, Pool, QueryResult } from '@vercel/postgres';
 
 let pool: Pool | null = null;
 
-interface ExtendedPoolClient extends PoolClient {
+// Define our own client interface
+interface DatabaseClient {
+  query: any;
+  release: () => void;
   lastQuery?: any;
 }
 
@@ -27,9 +30,9 @@ export async function query<T = any>(text: string, params?: unknown[]): Promise<
   return res;
 }
 
-export async function getClient(): Promise<ExtendedPoolClient> {
+export async function getClient(): Promise<DatabaseClient> {
   const pool = await getPool();
-  const client = await pool.connect() as ExtendedPoolClient;
+  const client = await pool.connect() as DatabaseClient;
   const query = client.query.bind(client);
   const release = client.release.bind(client);
 
@@ -40,7 +43,7 @@ export async function getClient(): Promise<ExtendedPoolClient> {
   }, 5000);
 
   // Monkey patch the query method to keep track of the last query executed
-  client.query = (...args: Parameters<typeof query>) => {
+  client.query = (...args: any[]) => {
     client.lastQuery = args;
     return query(...args);
   };
