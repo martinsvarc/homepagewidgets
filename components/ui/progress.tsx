@@ -3,16 +3,16 @@ import * as React from "react"
 import * as ProgressPrimitive from "@radix-ui/react-progress"
 import { cn } from "@/lib/utils"
 
-type ProgressProps = React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> & {
-  style?: {
+interface CustomProgressProps extends React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> {
+  css?: {
     '--progress-foreground'?: string;
-  } & React.CSSProperties;
+  };
 }
 
 const Progress = React.forwardRef
-  HTMLDivElement,  // Changed from ComponentRef to HTMLDivElement
-  ProgressProps
->(({ className, value, ...props }, ref) => (
+  HTMLDivElement,
+  CustomProgressProps
+>(({ className, value, css, ...props }, ref) => (
   <ProgressPrimitive.Root
     ref={ref}
     className={cn(
@@ -25,7 +25,7 @@ const Progress = React.forwardRef
       className="h-full w-full flex-1 transition-all"
       style={{ 
         transform: `translateX(-${100 - (value || 0)}%)`,
-        backgroundColor: props.style?.['--progress-foreground'] || 'hsl(var(--primary))'
+        backgroundColor: css?.['--progress-foreground'] || 'hsl(var(--primary))'
       }}
     />
   </ProgressPrimitive.Root>
