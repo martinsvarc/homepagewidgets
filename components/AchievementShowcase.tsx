@@ -1,225 +1,134 @@
 'use client'
-import React from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Medal, Trophy, Award, Target } from "lucide-react";
+import * as React from "react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Progress } from "@/components/ui/progress"
+import { useSearchParams } from 'next/navigation'
 
-const getProgressColor = (progress: number) => {
-  if (progress === 100) return '#546bc8' // Diamond blue
-  if (progress >= 70) return '#50c2aa'   // Green
-  if (progress >= 40) return '#fb9851'   // Orange
-  return '#ef4444'                       // Red
+interface Badge {
+  id: string
+  name: string
+  description: string
+  imageUrl: string
+  earned: boolean
+  earnedDate?: string
+  progress: number
+  requiredAmount: number
+  category: 'streak' | 'calls' | 'activity' | 'league'
 }
 
-interface Achievement {
-  icon: React.ReactNode;
-  level: string;
-  progress: number;
-  image?: string;
-  days?: number;
-  calls?: number;
-  sessions?: number;
+interface BadgeProps {
+  badge: Badge
 }
 
-interface Category {
-  id: string;
-  name: string;
-  items: Achievement[];
+const BadgeCard: React.FC<BadgeProps> = ({ badge }) => {
+  const progressPercentage = Math.min((badge.progress / badge.requiredAmount) * 100, 100)
+  
+  return (
+    <div className={`
+      relative p-4 rounded-[20px] border-2 
+      ${badge.earned ? 'border-[#51c1a9] bg-white' : 'border-gray-200 bg-gray-50'}
+      transition-all duration-300 hover:shadow-md
+    `}>
+      <div className="flex items-center gap-4">
+        <div className="relative w-16 h-16">
+          <img
+            src={badge.imageUrl}
+            alt={badge.name}
+            className={`w-full h-full object-contain ${!badge.earned && 'opacity-50 grayscale'}`}
+          />
+          {badge.earned && (
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#51c1a9] rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          )}
+        </div>
+        <div className="flex-1">
+          <h3 className="font-bold text-gray-900">{badge.name}</h3>
+          <p className="text-sm text-gray-500">{badge.description}</p>
+          <div className="mt-2">
+            <Progress 
+              value={progressPercentage} 
+              style={{ '--progress-foreground': badge.earned ? '#51c1a9' : '#94a3b8' } as React.CSSProperties}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {badge.progress} / {badge.requiredAmount}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function AchievementShowcase() {
-  const [activeCategory, setActiveCategory] = React.useState("practice-streak");
+  const [selectedCategory, setSelectedCategory] = React.useState<Badge['category']>('streak')
+  const [badges, setBadges] = React.useState<Record<Badge['category'], Badge[]>>({
+    streak: [],
+    calls: [],
+    activity: [],
+    league: []
+  })
+  const [isLoading, setIsLoading] = React.useState(true)
 
-  const categories: Category[] = [
-    {
-      id: "practice-streak",
-      name: "Practice Streak",
-      items: [
-        { 
-          icon: <Medal className="w-5 h-5" />, 
-          level: "5 Day Streak", 
-          progress: 100,
-          image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/5-day-streak.png",
-          days: 5
-        },
-        { 
-          icon: <Medal className="w-5 h-5" />, 
-          level: "10 Day Streak", 
-          progress: 100,
-          image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/10-day-streak.png",
-          days: 10
-        },
-        { 
-          icon: <Medal className="w-5 h-5" />, 
-          level: "30 Day Streak", 
-          progress: 80,
-          image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/30-day-streak.png",
-          days: 30
-        },
-        { 
-          icon: <Medal className="w-5 h-5" />, 
-          level: "90 Day Streak", 
-          progress: 45,
-          image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/90-day-streak.png",
-          days: 90
-        },
-        { 
-          icon: <Medal className="w-5 h-5" />, 
-          level: "180 Day Streak", 
-          progress: 20,
-          image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/180-day-streak.png",
-          days: 180
-        },
-        { 
-          icon: <Medal className="w-5 h-5" />, 
-          level: "365 Day Streak", 
-          progress: 5,
-          image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/365-day-streak.png",
-          days: 365
-        }
-      ]
-    },
-    {
-      id: "completed-calls",
-      name: "Completed Calls",
-      items: [
-        { icon: <Trophy className="w-5 h-5" />, level: "10 Calls", progress: 100, image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/10-calls.png", calls: 10 },
-        { icon: <Trophy className="w-5 h-5" />, level: "25 Calls", progress: 100, image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/25-calls.png", calls: 25 },
-        { icon: <Trophy className="w-5 h-5" />, level: "50 Calls", progress: 100, image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/50-calls.png", calls: 50 },
-        { icon: <Trophy className="w-5 h-5" />, level: "100 Calls", progress: 80, image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/100-calls.png", calls: 100 },
-        { icon: <Trophy className="w-5 h-5" />, level: "250 Calls", progress: 60, image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/250-calls.png", calls: 250 },
-        { icon: <Trophy className="w-5 h-5" />, level: "500 Calls", progress: 40, image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/500-calls.png", calls: 500 },
-        { icon: <Trophy className="w-5 h-5" />, level: "750 Calls", progress: 20, image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/750-calls.png", calls: 750 },
-        { icon: <Trophy className="w-5 h-5" />, level: "1000 Calls", progress: 10, image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/1000-calls.png", calls: 1000 },
-        { icon: <Trophy className="w-5 h-5" />, level: "1500 Calls", progress: 5, image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/1500-calls.png", calls: 1500 },
-        { icon: <Trophy className="w-5 h-5" />, level: "2500 Calls", progress: 0, image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/2500-calls.png", calls: 2500 }
-      ]
-    },
-    {
-      id: "activity-goals",
-      name: "Activity Goals",
-      items: [
-        { 
-          icon: <Target className="w-5 h-5" />, 
-          level: "10 Sessions in a Day", 
-          progress: 80,
-          sessions: 10
-        },
-        { 
-          icon: <Target className="w-5 h-5" />, 
-          level: "50 Sessions in a Week", 
-          progress: 60,
-          sessions: 50
-        },
-        { 
-          icon: <Target className="w-5 h-5" />, 
-          level: "100 Sessions in a Month", 
-          progress: 40,
-          sessions: 100
-        }
-      ]
-    },
-    {
-      id: "league-places",
-      name: "League Places",
-      items: [
-        { 
-          icon: <Award className="w-5 h-5" />, 
-          level: "Bronze League", 
-          progress: 100,
-          image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bronze-league.png"
-        },
-        { 
-          icon: <Award className="w-5 h-5" />, 
-          level: "Silver League", 
-          progress: 75,
-          image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/silver-league.png"
-        },
-        { 
-          icon: <Award className="w-5 h-5" />, 
-          level: "Gold League", 
-          progress: 45,
-          image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/gold-league.png"
-        }
-      ]
+  const searchParams = useSearchParams()
+  const memberId = searchParams.get('memberId')
+
+  React.useEffect(() => {
+    if (memberId) {
+      fetchBadges()
     }
-  ];
+  }, [memberId])
 
-  const activeItems = categories.find(cat => cat.id === activeCategory)?.items || [];
+  const fetchBadges = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/achievements?memberId=${memberId}`)
+      const data = await response.json()
+      
+      if (data.badges) {
+        setBadges(data.badges)
+      }
+    } catch (error) {
+      console.error('Error fetching badges:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (isLoading) {
+    return <div className="animate-pulse">Loading...</div>
+  }
 
   return (
-    <Card className="bg-white shadow-lg h-[280px]">
-      <CardContent className="p-3">
-        <h2 className="text-[25px] font-bold text-[#556bc7] font-montserrat text-center mb-3">
-          Achievement Showcase
+    <Card className="bg-white shadow-lg">
+      <CardContent className="p-4">
+        <h2 className="text-[25px] font-bold text-[#556bc7] font-montserrat text-center mb-4">
+          Achievements
         </h2>
-        <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full">
-          <TabsList className="w-full flex flex-wrap justify-between bg-gray-50/50 p-1 rounded-full gap-1">
-            {categories.map((category) => (
-              <TabsTrigger 
-                key={category.id}
-                value={category.id} 
-                className="flex-1 relative z-10 rounded-full px-2 py-1 text-xs font-medium text-gray-600 transition-all duration-300 hover:text-gray-900 data-[state=active]:bg-[#fbb350] data-[state=active]:text-white data-[state=active]:shadow-[0_8px_16px_-4px_rgba(251,179,80,0.3)]"
-              >
-                {category.name}
-              </TabsTrigger>
-            ))}
+        
+        <Tabs value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as Badge['category'])}>
+          <TabsList className="w-full grid grid-cols-4 bg-gray-50/50 p-1.5 rounded-full mb-4">
+            <TabsTrigger value="streak">Streaks</TabsTrigger>
+            <TabsTrigger value="calls">Calls</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
+            <TabsTrigger value="league">League</TabsTrigger>
           </TabsList>
+
+          <div className="space-y-4">
+            {badges[selectedCategory].map((badge) => (
+              <BadgeCard key={badge.id} badge={badge} />
+            ))}
+            {badges[selectedCategory].length === 0 && (
+              <div className="text-center text-gray-500 py-8">
+                No badges in this category yet
+              </div>
+            )}
+          </div>
         </Tabs>
-        <div className="mt-3 space-y-2 overflow-auto max-h-[160px] custom-scrollbar">
-          {activeItems.map((badge, index) => (
-            <TooltipProvider key={index}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg transition-colors">
-                    {badge.image ? (
-                      <div className="w-6 h-6">
-                        <img 
-                          src={badge.image} 
-                          alt={badge.level}
-                          className={`w-full h-full object-contain ${badge.progress < 100 ? 'opacity-50 grayscale' : ''}`}
-                        />
-                      </div>
-                    ) : (
-                      <div style={{ color: getProgressColor(badge.progress) }}>
-                        {badge.icon}
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="font-medium">{badge.level}</span>
-                        <span className="text-gray-500">{badge.progress}%</span>
-                      </div>
-                      <Progress 
-                        value={badge.progress} 
-                        className="h-1"
-                        style={{
-                          backgroundColor: '#f2f3f9',
-                          '--progress-background': '#f2f3f9',
-                          '--progress-foreground': getProgressColor(badge.progress)
-                        } as React.CSSProperties}
-                      />
-                    </div>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-xs">
-                    {badge.days 
-                      ? `${badge.level} - ${badge.progress}% Complete (${badge.days} days)`
-                      : badge.calls
-                      ? `${badge.level} - ${badge.progress}% Complete (${badge.calls} calls)`
-                      : badge.sessions
-                      ? `${badge.level} - ${badge.progress}% Complete (${badge.sessions} sessions)`
-                      : `${badge.level} - ${badge.progress}% Complete`}
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ))}
-        </div>
       </CardContent>
     </Card>
-  );
+  )
 }
