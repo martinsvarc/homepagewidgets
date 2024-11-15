@@ -2,7 +2,14 @@
 import * as React from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import {
+  Area,
+  AreaChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts"
 import { useSearchParams } from 'next/navigation'
 
 type LeagueData = {
@@ -14,31 +21,43 @@ type LeagueData = {
   rank: number
 }
 
+const mockChartData = [
+  { time: 'Mon', userPoints: 85, topUserPoints: 95 },
+  // ... keep your mock chart data for now
+]
+
 export default function League() {
-  const [category, setCategory] = React.useState<'daily' | 'weekly' | 'monthly'>('daily')
+  const [category, setCategory] = React.useState<'weekly' | 'allTime' | 'team'>('weekly')
   const [leagueData, setLeagueData] = React.useState<LeagueData[]>([])
-  const [chartData, setChartData] = React.useState<any[]>([])
+  const [chartData] = React.useState(mockChartData)
   const [isLoading, setIsLoading] = React.useState(true)
 
   const searchParams = useSearchParams()
   const memberId = searchParams.get('memberId')
 
-  // Fetch league data
   React.useEffect(() => {
     if (memberId) {
-      setIsLoading(true)
-      fetch(`/api/league-rankings?memberId=${memberId}&period=${category}`)
-        .then(response => response.json())
-        .then(data => {
-          setLeagueData(data)
-          setIsLoading(false)
-        })
-        .catch(error => {
-          console.error('Error loading league data:', error)
-          setIsLoading(false)
-        })
+      fetchLeagueData()
     }
   }, [memberId, category])
+
+  const fetchLeagueData = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/league-rankings?memberId=${memberId}&period=${category}`)
+      const data = await response.json()
+      
+      if (response.ok) {
+        setLeagueData(data.rows || [])
+      } else {
+        console.error('Error fetching league data:', data.error)
+      }
+    } catch (error) {
+      console.error('Error fetching league data:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const getBorderColor = (rank: number, isCurrentUser: boolean) => {
     if (isCurrentUser) return 'border-[#50c2aa]'
@@ -103,7 +122,7 @@ export default function League() {
       <CardContent className="p-3 h-full flex flex-col">
         <div className="flex flex-col gap-3 mb-4">
           <h2 className="text-[25px] font-bold text-[#556bc7] font-montserrat text-center">League</h2>
-          <Tabs value={category} onValueChange={(value) => setCategory(value as 'daily' | 'weekly' | 'monthly')} className="w-full">
+          <Tabs value={category} onValueChange={(value) => setCategory(value as 'weekly' | 'allTime' | 'team')} className="w-full">
             <TabsList className="w-full grid grid-cols-3 bg-gray-50/50 p-1.5 rounded-full">
               <TabsTrigger value="weekly">Weekly League</TabsTrigger>
               <TabsTrigger value="allTime">All Time</TabsTrigger>
@@ -112,8 +131,14 @@ export default function League() {
           </Tabs>
         </div>
 
+        {/* Keep your chart section */}
+        <div className="h-[220px] w-full bg-gray-100 rounded-[20px] p-2 mb-4">
+          <ResponsiveContainer width="100%" height="100%">
+            {/* ... your existing chart code ... */}
+          </ResponsiveContainer>
+        </div>
+
         <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-hidden">
-          <h3 className="text-lg font-semibold text-[#556bc7] font-montserrat pl-2">Rankings</h3>
           <div className="space-y-2 overflow-y-auto custom-scrollbar pr-1">
             {leagueData.map((user) => renderUserProfile(user))}
           </div>
