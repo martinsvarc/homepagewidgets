@@ -28,6 +28,16 @@ type ChartData = {
   top_user_points: number
 }
 
+type TooltipPayload = {
+  value: number
+  dataKey: string
+  payload: {
+    time: string
+    user_points: number
+    top_user_points: number
+  }
+}
+
 export default function League() {
   const [category, setCategory] = React.useState<'weekly' | 'allTime' | 'team'>('weekly')
   const [leagueData, setLeagueData] = React.useState<LeagueData[]>([])
@@ -183,14 +193,17 @@ export default function League() {
               />
               <Tooltip
                 content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
+                  if (active && payload && payload.length >= 2) {
+                    const userPoints = (payload[0] as TooltipPayload).value
+                    const topPoints = (payload[1] as TooltipPayload).value
+                    
                     return (
                       <div className="rounded-[8px] border border-gray-200 bg-white p-2 shadow-lg">
                         <p className="text-sm font-medium" style={{ color: '#fbb350' }}>
-                          Top Score: {payload[1].value.toLocaleString()} points
+                          Top Score: {topPoints.toLocaleString()} points
                         </p>
                         <p className="text-sm font-medium" style={{ color: '#51c1a9' }}>
-                          Your Score: {payload[0].value.toLocaleString()} points
+                          Your Score: {userPoints.toLocaleString()} points
                         </p>
                       </div>
                     )
