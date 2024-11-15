@@ -4,27 +4,34 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { useSearchParams } from 'next/navigation'
 
 export default function CalendarStreak() {
   const [currentMonth, setCurrentMonth] = React.useState(new Date())
-  
-  const streakData = React.useMemo(() => {
-    const today = new Date()
-    const currentStreak = 7
-    const longestStreak = 7
-    const activeDates = [] as string[]
+  const [streakData, setStreakData] = React.useState({
+    current: 0,
+    longest: 0,
+    activeDates: [] as string[]
+  })
 
-    for (let i = 0; i < currentStreak; i++) {
-      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i)
-      activeDates.push(date.toISOString().split('T')[0])
-    }
+  const searchParams = useSearchParams()
+  const memberId = searchParams.get('memberId')
 
-    return {
-      current: currentStreak,
-      longest: longestStreak,
-      activeDates
+  // Fetch streak data from the API
+  React.useEffect(() => {
+    if (memberId) {
+      fetch(`/api/track-activity?memberId=${memberId}`)
+        .then(response => response.json())
+        .then(data => {
+          setStreakData({
+            current: data.currentStreak || 0,
+            longest: data.longestStreak || 0,
+            activeDates: data.activeDates || []
+          })
+        })
+        .catch(error => console.error('Error loading streak data:', error))
     }
-  }, [currentMonth])
+  }, [memberId, currentMonth])
 
   const daysInMonth = new Date(
     currentMonth.getFullYear(),
@@ -48,11 +55,8 @@ export default function CalendarStreak() {
 
   const getDateStatus = (date: number) => {
     const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`
-    const dateIndex = streakData.activeDates.indexOf(dateStr)
-    if (dateIndex !== -1) {
-      if (dateIndex === 0) return 'current'
-      if (dateIndex < streakData.current) return 'currentStreak'
-      return 'previousStreak'
+    if (streakData.activeDates.includes(dateStr)) {
+      return 'currentStreak'
     }
     return 'inactive'
   }
@@ -61,11 +65,18 @@ export default function CalendarStreak() {
     const today = new Date()
     const currentDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), today.getDate())
     const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
-    const daysToDate = Math.floor((currentDate.getTime() - startOfMonth.getTime()) / (1000 * 60 * 60 * 24)) + 1
+    
+    // Only count days up to today
+    const daysToDate = Math.min(
+      today.getDate(),
+      Math.floor((currentDate.getTime() - startOfMonth.getTime()) / (1000 * 60 * 60 * 24)) + 1
+    )
 
     const activeDaysThisMonth = streakData.activeDates.filter(date => {
       const activeDate = new Date(date)
-      return activeDate >= startOfMonth && activeDate <= currentDate
+      return activeDate.getMonth() === currentMonth.getMonth() &&
+             activeDate.getFullYear() === currentMonth.getFullYear() &&
+             activeDate <= today
     }).length
 
     return Math.round((activeDaysThisMonth / daysToDate) * 100)
@@ -92,6 +103,16 @@ export default function CalendarStreak() {
       week.push(null)
     }
     weeks.push(week)
+  }
+
+  const isToday = (date: number | null) => {
+    if (!date) return false
+    const today = new Date()
+    return (
+      date === today.getDate() &&
+      currentMonth.getMonth() === today.getMonth() &&
+      currentMonth.getFullYear() === today.getFullYear()
+    )
   }
 
   return (
@@ -166,9 +187,8 @@ export default function CalendarStreak() {
                     "aspect-square flex items-center justify-center relative text-xs",
                     {
                       "text-gray-400": day && getDateStatus(day) === 'inactive',
-                      "border border-[#556bc7] text-[#556bc7] font-extrabold rounded-[8px]": day && getDateStatus(day) === 'current',
+                      "border border-[#556bc7] text-[#556bc7] font-extrabold rounded-[8px]": day && isToday(day),
                       "bg-[#51c1a9] border border-[#51c1a9] text-white font-extrabold rounded-[8px] shadow-sm": day && getDateStatus(day) === 'currentStreak',
-                      "bg-[#fbb350] text-white font-medium rounded-[8px] shadow-sm": day && getDateStatus(day) === 'previousStreak',
                       "": !day,
                     }
                   )}
