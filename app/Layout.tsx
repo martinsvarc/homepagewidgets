@@ -12,3 +12,15 @@ export const metadata: Metadata = {
   title: 'Dashboard',
   description: 'Personal improvement dashboard',
 }
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en">
+      <body className={`${montserrat.variable} font-sans`}>{children}</body>
+    </html>
+  )
+}
