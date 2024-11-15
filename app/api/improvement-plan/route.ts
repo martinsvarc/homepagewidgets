@@ -1,6 +1,12 @@
 import { createPool } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
 
+// Define the task type
+type Task = {
+  task: string;
+  color: string;
+};
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -38,7 +44,8 @@ export async function GET(request: Request) {
     // Based on user level, return appropriate tasks
     const userLevel = rows[0]?.user_level || 'beginner';
     
-    let tasks = [];
+    let tasks: Task[] = [];
+
     switch (userLevel) {
       case 'beginner':
         tasks = [
@@ -56,6 +63,7 @@ export async function GET(request: Request) {
           }
         ];
         break;
+
       case 'intermediate':
         tasks = [
           {
@@ -72,6 +80,7 @@ export async function GET(request: Request) {
           }
         ];
         break;
+
       case 'advanced':
         tasks = [
           {
