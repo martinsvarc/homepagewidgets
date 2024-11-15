@@ -19,9 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./*"]  // Changed this line from ["./src/*"] to ["./*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node.modules"]
+  "exclude": ["node_modules"]  // Also fixed typo in "node.modules"
 }
