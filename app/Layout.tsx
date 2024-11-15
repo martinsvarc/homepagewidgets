@@ -1,16 +1,12 @@
-import { Montserrat } from 'next/font/google'
-import '@/styles/globals.css'
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import '@/styles/globals.css'
 
-const montserrat = Montserrat({ 
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-montserrat',
-})
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Dashboard',
-  description: 'Personal improvement dashboard',
+  description: 'Performance tracking dashboard',
 }
 
 export default function RootLayout({
@@ -20,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${montserrat.variable} font-sans`}>{children}</body>
+      <body className={inter.className}>{children}</body>
     </html>
   )
 }
