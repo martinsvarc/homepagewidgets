@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     startOfWeek.setDate(now.getDate() - now.getDay()); // Start from Sunday
 
     switch (period) {
-      case 'weekly':
+      case 'weekly': {
         query = `
           WITH RankedUsers AS (
             SELECT 
@@ -48,8 +48,9 @@ export async function GET(request: Request) {
           ORDER BY rank ASC;
         `;
         return await pool.query(query, [startOfWeek.toISOString(), memberId]);
+      }
       
-      case 'allTime':
+      case 'allTime': {
         query = `
           WITH RankedUsers AS (
             SELECT 
@@ -74,13 +75,14 @@ export async function GET(request: Request) {
           ORDER BY rank ASC;
         `;
         return await pool.query(query, [memberId]);
+      }
       
-      case 'team':
+      case 'team': {
         const teamId = await pool.query(
           'SELECT team_id FROM user_activity WHERE user_id = $1 LIMIT 1',
           [memberId]
         );
-
+        
         if (!teamId.rows[0]?.team_id) {
           return NextResponse.json({ error: 'No team found' }, { status: 404 });
         }
@@ -111,6 +113,7 @@ export async function GET(request: Request) {
           ORDER BY rank ASC;
         `;
         return await pool.query(query, [teamId.rows[0].team_id, memberId]);
+      }
 
       default:
         return NextResponse.json({ error: 'Invalid period' }, { status: 400 });
