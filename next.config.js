@@ -1,10 +1,7 @@
 /** @type {import('next').NextConfig} */
 const path = require('path');
-
 const nextConfig = {
-  experimental: {
-    serverActions: true,
-  },
+  // Remove serverActions as it's now enabled by default in Next.js 14
   async rewrites() {
     return {
       fallback: [
