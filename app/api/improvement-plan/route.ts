@@ -1,13 +1,15 @@
 import { createPool } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // Define the task type
 type Task = {
   task: string;
   color: string;
 };
 
-export async function GET(request: Request) {
+export const GET = async (request: Request) => {
   try {
     const { searchParams } = new URL(request.url);
     const memberId = searchParams.get('memberId');
@@ -45,7 +47,6 @@ export async function GET(request: Request) {
     const userLevel = rows[0]?.user_level || 'beginner';
     
     let tasks: Task[] = [];
-
     switch (userLevel) {
       case 'beginner':
         tasks = [
@@ -109,4 +110,4 @@ export async function GET(request: Request) {
     console.error('Error getting improvement plan:', error);
     return NextResponse.json({ error: 'Failed to get improvement plan' }, { status: 500 });
   }
-}
+};
