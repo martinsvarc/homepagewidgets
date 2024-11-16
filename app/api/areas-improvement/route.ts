@@ -1,7 +1,9 @@
 import { createPool } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
 
-export async function GET(request: Request) {
+export const dynamic = 'force-dynamic';
+
+export const GET = async (request: Request) => {
   try {
     const { searchParams } = new URL(request.url);
     const memberId = searchParams.get('memberId');
@@ -59,7 +61,6 @@ export async function GET(request: Request) {
           color: "#fbb351"
         });
       }
-
       // Consistency-based improvement
       if (performance.current_streak < 5) {
         improvements.push({
@@ -67,7 +68,6 @@ export async function GET(request: Request) {
           color: "#50c2aa"
         });
       }
-
       // Volume-based improvement
       if (performance.total_sessions < 50) {
         improvements.push({
@@ -98,7 +98,6 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ improvements });
-
   } catch (error) {
     console.error('Error getting areas of improvement:', error);
     return NextResponse.json({ error: 'Failed to get improvement areas' }, { status: 500 });
