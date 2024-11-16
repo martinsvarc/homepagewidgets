@@ -1,6 +1,8 @@
 import { createPool } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -9,11 +11,9 @@ export async function GET(request: Request) {
     if (!memberId) {
       return NextResponse.json({ error: 'Member ID required' }, { status: 400 });
     }
-
     const pool = createPool({
       connectionString: process.env.POSTGRES_URL
     });
-
     // Calculate session counts for different time periods
     const { rows } = await pool.sql`
       WITH DateRanges AS (
@@ -31,7 +31,6 @@ export async function GET(request: Request) {
       FROM user_activity, DateRanges
       WHERE user_id = ${memberId};
     `;
-
     // Format data for the circles
     const sessions = [
       {
@@ -59,9 +58,7 @@ export async function GET(request: Request) {
         color: "#fbb351"
       }
     ];
-
     return NextResponse.json({ sessions });
-
   } catch (error) {
     console.error('Error getting activity data:', error);
     return NextResponse.json({ error: 'Failed to get activity data' }, { status: 500 });
