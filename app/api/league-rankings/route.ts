@@ -1,7 +1,9 @@
 import { createPool } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
 
-export async function GET(request: Request) {
+export const dynamic = 'force-dynamic';
+
+export const GET = async (request: Request) => {
   try {
     const { searchParams } = new URL(request.url);
     const memberId = searchParams.get('memberId');
@@ -20,7 +22,7 @@ export async function GET(request: Request) {
     startOfWeek.setDate(now.getDate() - now.getDay());
 
     let query = '';
-    let queryParams: any[] = [];
+    let queryParams: string[] = []; // Changed from any[] to string[] for better type safety
 
     const baseRankingQuery = `
       WITH UserRankings AS (
@@ -146,4 +148,4 @@ export async function GET(request: Request) {
     console.error('Error getting league rankings:', error);
     return NextResponse.json({ error: 'Failed to get rankings' }, { status: 500 });
   }
-}
+};
