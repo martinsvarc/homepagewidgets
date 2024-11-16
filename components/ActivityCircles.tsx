@@ -102,34 +102,7 @@ export default function ActivityCircles() {
   const searchParams = useSearchParams()
   const memberId = searchParams.get('memberId')
 
-  React.useEffect(() => {
-    if (memberId) {
-      fetchActivityData()
-    }
-  }, [memberId])
-
-  const fetchActivityData = async () => {
-    try {
-      setIsLoading(true)
-      const response = await fetch(`/api/activity-circles?memberId=${memberId}`)
-      const data = await response.json()
-      
-      if (data.sessions) {
-        // Add icons to the sessions data
-        const sessionsWithIcons = data.sessions.map((session: Session) => ({
-          ...session,
-          icon: getIconForLabel(session.label)
-        }))
-        setSessions(sessionsWithIcons)
-      }
-    } catch (error) {
-      console.error('Error fetching activity data:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const getIconForLabel = (label: string) => {
+  const getIconForLabel = React.useCallback((label: string) => {
     switch (label) {
       case 'today':
         return <Clock className="w-5 h-5" />
@@ -142,7 +115,35 @@ export default function ActivityCircles() {
       default:
         return <Clock className="w-5 h-5" />
     }
-  }
+  }, [])
+
+  const fetchActivityData = React.useCallback(async () => {
+    if (!memberId) return;
+    
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/activity-circles?memberId=${memberId}`)
+      const data = await response.json()
+      
+      if (data.sessions) {
+        const sessionsWithIcons = data.sessions.map((session: Session) => ({
+          ...session,
+          icon: getIconForLabel(session.label)
+        }))
+        setSessions(sessionsWithIcons)
+      }
+    } catch (error) {
+      console.error('Error fetching activity data:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [memberId, getIconForLabel])
+
+  React.useEffect(() => {
+    if (memberId) {
+      fetchActivityData()
+    }
+  }, [memberId, fetchActivityData])
 
   const nextMetric = () => {
     setCurrentIndex((prev) => (prev + 1) % sessions.length)
