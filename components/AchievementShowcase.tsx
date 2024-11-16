@@ -1,5 +1,6 @@
 'use client'
 import * as React from "react"
+import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
@@ -32,10 +33,12 @@ const BadgeCard: React.FC<BadgeProps> = ({ badge }) => {
     `}>
       <div className="flex items-center gap-4">
         <div className="relative w-16 h-16">
-          <img
+          <Image
             src={badge.imageUrl}
             alt={badge.name}
-            className={`w-full h-full object-contain ${!badge.earned && 'opacity-50 grayscale'}`}
+            width={64}
+            height={64}
+            className={`object-contain ${!badge.earned && 'opacity-50 grayscale'}`}
           />
           {badge.earned && (
             <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#51c1a9] rounded-full flex items-center justify-center">
@@ -76,13 +79,9 @@ export default function AchievementShowcase() {
   const searchParams = useSearchParams()
   const memberId = searchParams.get('memberId')
 
-  React.useEffect(() => {
-    if (memberId) {
-      fetchBadges()
-    }
-  }, [memberId])
-
-  const fetchBadges = async () => {
+  const fetchBadges = React.useCallback(async () => {
+    if (!memberId) return
+    
     try {
       setIsLoading(true)
       const response = await fetch(`/api/achievements?memberId=${memberId}`)
@@ -96,7 +95,13 @@ export default function AchievementShowcase() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [memberId])
+
+  React.useEffect(() => {
+    if (memberId) {
+      fetchBadges()
+    }
+  }, [fetchBadges, memberId])
 
   if (isLoading) {
     return <div className="animate-pulse">Loading...</div>
