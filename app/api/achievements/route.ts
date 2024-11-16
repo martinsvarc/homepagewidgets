@@ -1,6 +1,8 @@
 import { createPool } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 type Badge = {
   id: string;
   name: string;
@@ -26,7 +28,6 @@ export async function GET(request: Request) {
       connectionString: process.env.POSTGRES_URL
     });
 
-    // Your SQL query remains the same
     const { rows } = await pool.sql`
       WITH UserStats AS (
         SELECT 
@@ -62,7 +63,6 @@ export async function GET(request: Request) {
 
     const stats = rows[0];
     
-    // Define all possible badges with explicit type annotations
     const streakBadges = [
       { id: 'streak-5', name: '5 Day Streak', description: '5 days in a row', imageUrl: '/badges/streak-5.png', earned: false, progress: stats.max_streak, requiredAmount: 5, category: 'streak' as const },
       { id: 'streak-10', name: '10 Day Streak', description: '10 days in a row', imageUrl: '/badges/streak-10.png', earned: false, progress: stats.max_streak, requiredAmount: 10, category: 'streak' as const },
