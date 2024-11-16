@@ -1,5 +1,6 @@
 'use client'
 import * as React from "react"
+import Image from "next/image" // Add this import
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -98,9 +99,11 @@ export default function League() {
           <span>#{user.rank}</span>
         </div>
         <div className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border-2 border-gray-200 flex-shrink-0">
-          <img
+          <Image
             src={user.profile_picture_url}
             alt={user.user_name}
+            width={32}
+            height={32}
             className="w-full h-full object-cover"
           />
         </div>
@@ -109,10 +112,12 @@ export default function League() {
             <span className="truncate">{user.user_name}</span>
             <div className="flex-shrink-0 flex items-center">
               {user.badges?.map((badge, index) => (
-                <img
+                <Image
                   key={index}
                   src={badge}
                   alt={`Badge ${index + 1}`}
+                  width={16}
+                  height={16}
                   className="w-4 h-4 object-contain"
                 />
               ))}
